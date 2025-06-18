@@ -1,0 +1,59 @@
+---
+- name: Install required packages
+  apt:
+    name:
+      - curl
+      - git
+      - make
+      - build-essential
+    state: present
+    update_cache: true
+
+- name: Download and install Go
+  shell: |
+    curl -L https://dl.google.com/go/go{{ lava_binary.go_version }}.linux-amd64.tar.gz | sudo tar -C /usr/local -zxf -
+  args:
+    creates: /usr/local/go/bin/go
+
+- name: Set Go environment variables
+  lineinfile:
+    path: /etc/profile.d/go.sh
+    line: "{{ item }}"
+    create: true
+    mode: '0644'
+  with_items:
+    - 'export GOROOT=/usr/local/go'
+    - 'export GOPATH=$HOME/go'
+    - 'export GO111MODULE=on'
+    - 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin'
+
+- name: Reload shell environment
+  shell: |
+    source /etc/profile.d/go.sh
+    echo $PATH
+  args:
+    executable: /bin/bash
+  register: path_output
+  changed_when: false
+
+- name: Clone LAVA repo
+  git:
+    repo: "{{ lava_binary.git_repository }}"
+    dest: "{{ lava_binary.install_dir }}/src"
+    version: "{{ lava_binary.image_tag }}"
+    update: true
+
+- name: Build and install binary to /usr/local/bin
+  shell: |
+    source /etc/profile.d/go.sh
+    cd {{ lava_binary.install_dir }}/src
+    make build
+    sudo cp build/{{ lava_binary.name }} /usr/local/bin/
+    sudo chmod +x /usr/local/bin/{{ lava_binary.name }}
+  environment:
+    PATH: "{{ path_output.stdout }}:/usr/local/go/bin:{{ ansible_env.PATH }}"
+    GOPATH: "{{ ansible_env.HOME }}/go"
+    GO111MODULE: "on"
+  args:
+    executable: /bin/bash
+    creates: /usr/local/bin/{{ lava_binary.name }}

@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: Start Converge Task
+      debug:
+        msg: "Converge Task"
+
+- name: Import setup.yml playbook
+  import_playbook: ../../playbooks/setup.yml

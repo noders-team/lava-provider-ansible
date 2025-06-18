@@ -1,0 +1,60 @@
+---
+- name: Create Lava Provider group
+  group:
+    name: "{{ lava_group }}"
+    state: present
+
+- name: Create Lava Provider user
+  user:
+    name: "{{ lava_user }}"
+    group: "{{ lava_group }}"
+    system: true
+    create_home: true
+    shell: /bin/bash
+    state: present
+
+- name: Create Lava Provider directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ lava_user }}"
+    group: "{{ lava_group }}"
+    mode: '0750'
+  with_items:
+    - "{{ lava_install_dir }}"
+    - "{{ lava_config_dir }}"
+    - "{{ lava_rewards_storage_dir }}"
+
+- name: Template Lava Provider files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0640'
+    owner: "{{ lava_user }}"
+    group: "{{ lava_group }}"
+  with_items:
+    - {src: 'lava-provider.service.j2', dest: '/etc/systemd/system/{{ lava_service_name }}.service'}
+    - {src: 'provider.env.j2', dest: '{{ lava_install_dir }}/provider.env'}
+    - {src: 'rpcprovider.yml.j2', dest: '{{ lava_config_dir }}/rpcprovider.yml'}
+  notify: Reload systemd
+
+- name: Check if binary is installed
+  command: "which {{ lava_binary.name }}"
+  register: binary_path
+  changed_when: false
+  failed_when: false
+  ignore_errors: true
+
+- name: Install binary
+  include_tasks: binary.yml
+  when: binary_path.rc != 0
+
+- name: Start and enable lava provider service
+  systemd:
+    name: "{{ lava_service_name }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Include nginx with certbot and SSL setup
+  include_tasks: nginx_ssl.yml

@@ -1,0 +1,10 @@
+---
+- name: Idempotence
+  hosts: all
+  tasks:
+    - name: Start Idempotence Task
+      debug:
+        msg: "Idempotence Task"
+
+- name: Import setup.yml playbook
+  import_playbook: ../../playbooks/setup.yml

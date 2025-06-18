@@ -1,0 +1,45 @@
+---
+- name: Verify
+  vars_files:
+    - ../../group_vars/all.yml
+  hosts: all
+  tasks:
+    - name: Verify binary installation
+      command: "{{ lava_binary.name }} version"
+      register: version_output
+      changed_when: false
+
+    - name: Display binary version
+      debug:
+        msg: "{{ lava_binary.name }} version: {{ version_output.stdout }}"
+
+    - name: Verify that certbot is installed
+      command: "which certbot"
+      changed_when: false
+      when: lava_nginx.enabled and lava_nginx.certbot_enabled
+
+    - name: Get Service Status
+      command: "systemctl show -p LoadState,ActiveState {{ lava_service_name }}"
+      register: systemd_check
+      changed_when: false
+
+    - name: Verify that the service is loaded
+      assert:
+        that:
+          - "'LoadState=loaded' in systemd_check.stdout"
+          - "'ActiveState=active' in systemd_check.stdout or 'ActiveState=activating' in systemd_check.stdout"
+        fail_msg: "Service is not loaded"
+        success_msg: "Service is loaded"
+
+    - name: Get nginx service status
+      command: "systemctl show -p LoadState,ActiveState nginx"
+      register: nginx_check
+      changed_when: false
+      when: lava_nginx.enabled
+
+    - name: Verify that the nginx service is loaded
+      assert:
+        that:
+          - "'LoadState=loaded' in nginx_check.stdout"
+          - "'ActiveState=active' in nginx_check.stdout or 'ActiveState=activating' in nginx_check.stdout"
+      when: lava_nginx.enabled

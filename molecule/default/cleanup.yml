@@ -1,0 +1,10 @@
+---
+- name: Cleanup
+  hosts: all
+  tasks:
+    - name: Start Cleanup Task
+      debug:
+        msg: "Cleanup Task"
+
+- name: Import clean.yml playbook
+  import_playbook: ../../playbooks/clean.yml

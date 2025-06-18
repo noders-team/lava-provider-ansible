@@ -1,0 +1,33 @@
+[Unit]
+Description=Lava Provider Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User={{ lava_user }}
+Group={{ lava_group }}
+WorkingDirectory={{ lava_install_dir }}
+EnvironmentFile={{ lava_install_dir }}/provider.env
+ExecStart=/usr/local/bin/{{ lava_binary.name }} rpcprovider {{ lava_config_dir }}/rpcprovider.yml \
+    --from {{ lava_provider_config.wallet.name }} \
+    --chain-id {{ lava_provider_config.chain_id }} \
+    --keyring-backend {{ lava_provider_config.wallet.keyring_backend }} \
+    --home {{ lava_install_dir }} \
+    --geolocation {{ lava_provider_config.geolocation }} \
+    --node {{ lava_provider_config.public_rpc_url }}
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target 

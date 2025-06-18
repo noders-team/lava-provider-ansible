@@ -1,0 +1,10 @@
+---
+- name: Setup Lava RPC Provider
+  hosts: all
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  roles:
+    - role: ../roles/provider
+  environment:
+    LAVA_BINARY: "{{ lava_binary.name }}"

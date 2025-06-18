@@ -1,0 +1,65 @@
+---
+lava_user: lava   # User for the provider
+lava_group: lava  # Group for the user
+
+lava_binary:
+  name: lavad  # Name of the binary
+  git_repository: https://github.com/lavanet/lava  # Git repository of the binary
+  image_tag: v3.0.3  # Image tag of the binary
+  install_dir: /opt/lava  # Install directory of the binary
+  data_dir: /opt/lava/data  # Data directory of the binary
+  go_version: 1.21.5  # Go version of the binary
+
+lava_service_name: lava-provider  # Service name of the provider
+lava_install_dir: "/home/{{ lava_user }}/.lava"  # Install directory of the provider
+lava_config_dir: "{{ lava_install_dir }}/config"  # Config directory of the provider
+lava_rewards_storage_dir: "{{ lava_install_dir }}/rewards-storage"  # Rewards storage directory of the provider
+
+lava_provider_config:
+  cache:  # Cache configuration
+    enable: false  # Enable cache
+    address: lava-cache  # Address of the cache
+    port: 23100  # Port of the cache
+  chain_id: lava-testnet-2  # Chain ID of the provider
+  config_dir: "{{ lava_config_dir }}"  # Config directory of the provider
+  geolocation: 2  # Geolocation of the provider
+  wallet:  # Wallet configuration
+    name: lava-wallet  # Name of the wallet
+    keyring_backend: test  # Keyring backend of the wallet
+    password: ""  # Asked during setup
+  log_level: info  # Log level of the provider
+  ports:
+    grpc: 22001  # Port of the gRPC server
+    metrics: 23001  # Port of the metrics server
+  moniker: "CHANGE-ME"  # Moniker of the provider
+  rewards_storage_dir: "{{ lava_rewards_storage_dir }}"  # Rewards storage directory of the provider
+  public_rpc_url: "https://lava-t-rpc.noders.services"  # Public RPC URL of the provider
+  total_connections: 25  # Total connections of the provider
+
+chains:  # Chains configuration
+  - name: "Arbitrum mainnet"
+    endpoints:
+      - chain_id: "ARB1"
+        api_interface: "jsonrpc"
+        network_address: "0.0.0.0:22001"
+        disable_tls: true
+        node_urls:
+          - "http://arbitrum-mainnet:8545"
+          - "http://arbitrum-mainnet:8546"
+
+  - name: "Avalanche mainnet"
+    endpoints:
+      - chain_id: "AVAX"
+        api_interface: "jsonrpc"
+        network_address: "0.0.0.0:22001"
+        disable_tls: true
+        node_urls:
+          - "http://avalanche-mainnet/ext/bc"
+
+# ... more chains
+
+lava_nginx:
+  enabled: true  # Enable Nginx
+  domain: example.com  # Domain of the provider
+  certbot_enabled: false  # Enable Certbot
+  certbot_email: admin@example.com  # Email for Certbot

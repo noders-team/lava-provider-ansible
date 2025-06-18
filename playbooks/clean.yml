@@ -1,0 +1,25 @@
+---
+- name: Clean Lava RPC Provider
+  hosts: all
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  tasks:
+
+    - name: Stop and remove service
+      service:
+        name: "{{ lava_service_name }}"
+        state: stopped
+        enabled: false
+      ignore_errors: true
+
+    - name: Remove Lava Provider user
+      user:
+        name: "{{ lava_user }}"
+        state: absent
+        remove: true
+
+    - name: Remove Lava Provider group
+      group:
+        name: "{{ lava_group }}"
+        state: absent

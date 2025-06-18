@@ -1,0 +1,69 @@
+---
+- name: Install Nginx and Certbot
+  apt:
+    name:
+      - nginx
+      - python3-certbot-nginx
+    state: present
+    update_cache: true
+  when: lava_nginx.enabled
+
+- name: Ensure Nginx is running and enabled
+  service:
+    name: nginx
+    state: started
+    enabled: true
+  when: lava_nginx.enabled
+
+- name: Open HTTP and HTTPS ports in firewall (если используется UFW)
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - 80
+    - 443
+  ignore_errors: true
+  when: lava_nginx.enabled
+
+- name: Create Nginx site config for LAVA Provider
+  template:
+    src: nginx_lava_provider.conf.j2
+    dest: /etc/nginx/sites-available/lava_provider
+  notify: Reload Nginx
+  when: lava_nginx.enabled
+
+- name: Enable Nginx site
+  file:
+    src: /etc/nginx/sites-available/lava_provider
+    dest: /etc/nginx/sites-enabled/lava_provider
+    state: link
+    force: true
+  notify: Reload Nginx
+  when: lava_nginx.enabled
+
+- name: Remove default Nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload Nginx
+  when: lava_nginx.enabled
+
+- name: Obtain SSL certificates with Certbot
+  command: >
+    certbot --nginx --non-interactive --agree-tos --redirect
+    -d {{ lava_nginx.domain }}
+    -m {{ lava_nginx.certbot_email }}
+  args:
+    creates: /etc/letsencrypt/live/{{ lava_nginx.domain }}/fullchain.pem
+  when: lava_nginx.enabled and lava_nginx.certbot_enabled
+  ignore_errors: true
+
+- name: Ensure Certbot auto-renewal is enabled
+  cron:
+    name: "Certbot renew"
+    job: "certbot renew --quiet"
+    minute: 0
+    hour: 3
+  when: lava_nginx.enabled and lava_nginx.certbot_enabled
+  ignore_errors: true

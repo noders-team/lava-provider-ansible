@@ -1,0 +1,35 @@
+endpoints:
+
+{% for chain in chains %}
+  #### {{ chain.name }} ####
+{% for endpoint in chain.endpoints %}
+  - api-interface: {{ endpoint.api_interface }}
+    chain-id: {{ endpoint.chain_id }}
+    network-address:
+      address: {{ endpoint.network_address }}
+      disable-tls: {{ endpoint.disable_tls | lower }}
+    node-urls:
+{% for url in endpoint.node_urls %}
+      - url: {{ url }}
+{% endfor %}
+{% endfor %}
+
+{% endfor %}
+
+metrics-listen-address: "{{ lava_provider_config.ports.metrics }}"
+total-connections: {{ lava_provider_config.total_connections }}
+
+health-check:
+  enabled: true
+  interval: 60s
+  timeout: 10s
+  max-latency: 5s
+
+cache:
+  enabled: {{ lava_provider_config.cache.enable | lower }}
+{% if lava_provider_config.cache.enable %}
+  address: {{ lava_provider_config.cache.address }}
+  port: {{ lava_provider_config.cache.port }}
+{% endif %}
+
+log-level: {{ lava_provider_config.log_level }}
