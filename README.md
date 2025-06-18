@@ -8,7 +8,7 @@ This repository contains Ansible playbooks for setting up and managing a Lava Ne
 
 ## Prerequisites
 
-- Ubuntu 22.04 LTS (Also Verified on Ubuntu 24.04 LTS and Debian 12)
+- Ubuntu 22.04 LTS (Also Verified on Ubuntu 24.04 LTS)
 - Ansible 2.9 or later
 - At least 4GB RAM
 - At least 100GB free disk space
