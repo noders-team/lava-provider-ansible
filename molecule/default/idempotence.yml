@@ -1,6 +1,6 @@
 ---
 - name: Idempotence
-  hosts: 
+  hosts: all
   tasks:
     - name: Start Idempotence Task
       debug:
