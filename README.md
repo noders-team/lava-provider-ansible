@@ -8,7 +8,7 @@ This repository contains Ansible playbooks for setting up and managing a Lava Ne
 
 ## Prerequisites
 
-- Ubuntu 22.04 LTS (Also Verified on Ubuntu 24.04 LTS)
+- Ubuntu 22.04 LTS (Also Verified on Ubuntu 24.04 LTS and Debian 12)
 - Ansible 2.9 or later
 - At least 4GB RAM
 - At least 100GB free disk space
@@ -92,7 +92,7 @@ Configure the chains you want to provide RPC services for. Each chain requires:
 
 ```bash
 # Run the setup playbook
-ansible-playbook playbooks/setup.yml
+ansible-playbook playbooks/setup.yml -i localhost, --connection=local
 ```
 
 This will:
@@ -130,7 +130,7 @@ To remove the installation:
 
 ```bash
 # Run the cleanup playbook
-ansible-playbook playbooks/clean.yml
+ansible-playbook playbooks/clean.yml -i localhost, --connection=local
 ```
 
 This will:
