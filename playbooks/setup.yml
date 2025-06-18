@@ -1,6 +1,6 @@
 ---
 - name: Setup Lava RPC Provider
-  hosts: all
+  hosts: localhost
   become: true
   vars_files:
     - ../group_vars/all.yml

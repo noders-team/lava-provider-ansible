@@ -1,6 +1,6 @@
 ---
 - name: Converge
-  hosts: all
+  hosts: localhost
   tasks:
     - name: Start Converge Task
       debug:

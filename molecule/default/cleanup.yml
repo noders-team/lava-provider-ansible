@@ -1,6 +1,6 @@
 ---
 - name: Cleanup
-  hosts: all
+  hosts: localhost
   tasks:
     - name: Start Cleanup Task
       debug:

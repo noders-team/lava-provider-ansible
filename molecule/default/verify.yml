@@ -2,7 +2,7 @@
 - name: Verify
   vars_files:
     - ../../group_vars/all.yml
-  hosts: all
+  hosts: localhost
   tasks:
     - name: Verify binary installation
       command: "{{ lava_binary.name }} version"
