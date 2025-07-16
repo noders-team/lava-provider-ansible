@@ -23,3 +23,17 @@
       group:
         name: "{{ lava_group }}"
         state: absent
+
+    - name: Remove binary
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "/usr/local/bin/{{ lava_binary.name }}"
+
+    - name: Remove install directory
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ lava_install_dir }}"

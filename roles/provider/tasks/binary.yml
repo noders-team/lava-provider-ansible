@@ -9,9 +9,18 @@
     state: present
     update_cache: true
 
+- name: Detect system architecture
+  command: uname -m
+  register: system_arch
+  changed_when: false
+
+- name: Set Go architecture variable
+  set_fact:
+    go_arch: "{{ 'amd64' if system_arch.stdout == 'x86_64' else 'arm64' if system_arch.stdout in ['aarch64', 'arm64'] else 'arm' if system_arch.stdout.startswith('arm') else 'amd64' }}"
+
 - name: Download and install Go
   shell: |
-    curl -L https://dl.google.com/go/go{{ lava_binary.go_version }}.linux-amd64.tar.gz | sudo tar -C /usr/local -zxf -
+    curl -L https://dl.google.com/go/go{{ lava_binary.go_version }}.linux-{{ go_arch }}.tar.gz | sudo tar -C /usr/local -zxf -
   args:
     creates: /usr/local/go/bin/go
 
@@ -43,17 +52,51 @@
     version: "{{ lava_binary.image_tag }}"
     update: true
 
+- name: Test Go installation
+  shell: |
+    source /etc/profile.d/go.sh
+    go version
+  args:
+    executable: /bin/bash
+  register: go_test
+
+- name: Display Go version
+  debug:
+    msg: "Go version: {{ go_test.stdout }}"
+
 - name: Build and install binary to /usr/local/bin
   shell: |
     source /etc/profile.d/go.sh
     cd {{ lava_binary.install_dir }}/src
-    make build
+    make build-{{ lava_binary.name }}
     sudo cp build/{{ lava_binary.name }} /usr/local/bin/
     sudo chmod +x /usr/local/bin/{{ lava_binary.name }}
   environment:
-    PATH: "{{ path_output.stdout }}:/usr/local/go/bin:{{ ansible_env.PATH }}"
+    PATH: "/usr/local/go/bin:{{ ansible_env.PATH }}"
     GOPATH: "{{ ansible_env.HOME }}/go"
     GO111MODULE: "on"
+    GOROOT: "/usr/local/go"
   args:
     executable: /bin/bash
     creates: /usr/local/bin/{{ lava_binary.name }}
+  register: build_result
+  failed_when: false
+
+- name: Download pre-built binary if build fails
+  get_url:
+    url: "https://github.com/lavanet/lava/releases/download/{{ lava_binary.image_tag }}/{{ lava_binary.name }}_{{ lava_binary.image_tag }}_linux_{{ go_arch }}"
+    dest: "/usr/local/bin/{{ lava_binary.name }}"
+    mode: '0755'
+    force: true
+  when: build_result.rc != 0
+  ignore_errors: true
+
+- name: Verify binary installation
+  command: "{{ lava_binary.name }} version"
+  register: binary_version
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+
+- name: Display binary version
+  debug:
+    msg: "{{ lava_binary.name }} version: {{ binary_version.stdout }}"

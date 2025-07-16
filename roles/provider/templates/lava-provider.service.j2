@@ -8,7 +8,7 @@ User={{ lava_user }}
 Group={{ lava_group }}
 WorkingDirectory={{ lava_install_dir }}
 EnvironmentFile={{ lava_install_dir }}/provider.env
-ExecStart=/usr/local/bin/{{ lava_binary.name }} rpcprovider {{ lava_config_dir }}/rpcprovider.yml \
+ExecStart=/usr/local/bin/{{ lava_binary.name }} rpcprovider ./config/rpcprovider.yml \
     --from {{ lava_provider_config.wallet.name }} \
     --chain-id {{ lava_provider_config.chain_id }} \
     --keyring-backend {{ lava_provider_config.wallet.keyring_backend }} \
@@ -18,16 +18,6 @@ ExecStart=/usr/local/bin/{{ lava_binary.name }} rpcprovider {{ lava_config_dir }
 Restart=always
 RestartSec=3
 LimitNOFILE=65535
-
-# Security
-NoNewPrivileges=true
-ProtectSystem=full
-ProtectHome=true
-PrivateTmp=true
-PrivateDevices=true
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectControlGroups=true
 
 [Install]
 WantedBy=multi-user.target 

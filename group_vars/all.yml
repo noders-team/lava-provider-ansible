@@ -1,65 +1,189 @@
 ---
-lava_user: lava   # User for the provider
-lava_group: lava  # Group for the user
+# =============================================================================
+# LAVA PROVIDER CONFIGURATION
+# =============================================================================
+# This configuration file contains all the settings needed to deploy a Lava
+# provider. Please review and modify the values according to your setup.
 
+# =============================================================================
+# USER AND GROUP CONFIGURATION
+# =============================================================================
+lava_user: lava-provider   # System user for the provider service
+lava_group: lava-provider  # System group for the user
+
+# =============================================================================
+# BINARY CONFIGURATION
+# =============================================================================
 lava_binary:
-  name: lavad  # Name of the binary
-  git_repository: https://github.com/lavanet/lava  # Git repository of the binary
-  image_tag: v3.0.3  # Image tag of the binary
-  install_dir: /opt/lava  # Install directory of the binary
-  data_dir: /opt/lava/data  # Data directory of the binary
-  go_version: 1.21.5  # Go version of the binary
+  name: lavap  # Binary name - lavap for provider, lavad for validator
+  git_repository: https://github.com/lavanet/lava  # Lava Protocol repository
+  image_tag: v5.4.1  # Version tag to build/download (updated for protocol 4.2.1+)
+  install_dir: /opt/lava  # Directory for source code compilation
+  data_dir: /opt/lava/data  # Data directory for the binary
+  go_version: 1.21.5  # Go version required for compilation
 
-lava_service_name: lava-provider  # Service name of the provider
-lava_install_dir: "/home/{{ lava_user }}/.lava"  # Install directory of the provider
-lava_config_dir: "{{ lava_install_dir }}/config"  # Config directory of the provider
-lava_rewards_storage_dir: "{{ lava_install_dir }}/rewards-storage"  # Rewards storage directory of the provider
+# =============================================================================
+# SERVICE CONFIGURATION
+# =============================================================================
+lava_service_name: lava-provider  # SystemD service name
+lava_install_dir: "/home/{{ lava_user }}/.lava-provider"  # Provider home directory
+lava_config_dir: "{{ lava_install_dir }}/config"  # Configuration files directory
+lava_rewards_storage_dir: "{{ lava_install_dir }}/rewards-storage"  # Rewards storage directory
 
+# =============================================================================
+# PROVIDER SETTINGS
+# =============================================================================
 lava_provider_config:
-  cache:  # Cache configuration
-    enable: false  # Enable cache
-    address: lava-cache  # Address of the cache
-    port: 23100  # Port of the cache
-  chain_id: lava-testnet-2  # Chain ID of the provider
-  config_dir: "{{ lava_config_dir }}"  # Config directory of the provider
-  geolocation: 2  # Geolocation of the provider
-  wallet:  # Wallet configuration
-    name: lava-wallet  # Name of the wallet
-    keyring_backend: test  # Keyring backend of the wallet
-    password: ""  # Asked during setup
-  log_level: info  # Log level of the provider
-  ports:
-    grpc: 22001  # Port of the gRPC server
-    metrics: 23001  # Port of the metrics server
-  moniker: "CHANGE-ME"  # Moniker of the provider
-  rewards_storage_dir: "{{ lava_rewards_storage_dir }}"  # Rewards storage directory of the provider
-  public_rpc_url: "https://lava-t-rpc.noders.services"  # Public RPC URL of the provider
-  total_connections: 25  # Total connections of the provider
+  # Cache configuration (optional)
+  cache:
+    enable: false  # Set to true to enable caching
+    address: lava-cache  # Cache server address (if enabled)
+    port: 23100  # Cache server port (if enabled)
 
-chains:  # Chains configuration
-  - name: "Arbitrum mainnet"
+  # Network configuration
+  chain_id: lava-mainnet-1  # Lava network: lava-mainnet-1 or lava-testnet-2
+  config_dir: "{{ lava_config_dir }}"
+  geolocation: 2  # Provider geolocation (1=US, 2=EU, etc.)
+
+  # Wallet configuration
+  wallet:
+    name: "provider-wallet"  # CHANGE THIS: Your wallet name
+    keyring_backend: test  # Keyring backend: test, file, or os
+    password: ""  # Password for keyring (if using file backend)
+
+  # Logging and monitoring
+  log_level: info  # Log level: debug, info, warn, error
+  ports:
+    grpc: 22001  # gRPC server port for provider
+    metrics: 23001  # Metrics server port
+
+  # Provider identification
+  moniker: "CHANGE-ME"  # CHANGE THIS: Your provider moniker/name
+  rewards_storage_dir: "{{ lava_rewards_storage_dir }}"
+
+  # Network endpoints
+  public_rpc_url: "https://public-rpc.lavanet.xyz:443"  # Lava network RPC endpoint
+  total_connections: 25  # Maximum concurrent connections
+
+# =============================================================================
+# BLOCKCHAIN ENDPOINTS CONFIGURATION
+# =============================================================================
+# Configure the blockchain networks your provider will serve.
+# Each chain requires specific node URLs that you must provide.
+#
+# IMPORTANT: Replace the placeholder URLs with your actual node endpoints!
+#
+# Format for each chain:
+# - name: Human readable name
+#   endpoints:
+#     - chain_id: Official Lava chain identifier
+#       api_interface: jsonrpc, rest, tendermintrpc, or grpc
+#       network_address: Your provider listening address
+#       disable_tls: true for local connections, false for HTTPS
+#       node_urls: Your actual blockchain node URLs
+
+chains:
+  # =============================================================================
+  # ETHEREUM MAINNET
+  # =============================================================================
+  - name: "Ethereum Mainnet"
     endpoints:
-      - chain_id: "ARB1"
+      - chain_id: "ETH1"
         api_interface: "jsonrpc"
-        network_address: "0.0.0.0:22001"
+        network_address: "127.0.0.1:22005"
         disable_tls: true
         node_urls:
-          - "http://arbitrum-mainnet:8545"
-          - "http://arbitrum-mainnet:8546"
+          - "https://YOUR-ETH-NODE-URL"  # CHANGE THIS: Your Ethereum RPC endpoint
+          - "wss://YOUR-ETH-WSS-URL"     # CHANGE THIS: Your Ethereum WebSocket endpoint
 
-  - name: "Avalanche mainnet"
+  # =============================================================================
+  # ARBITRUM MAINNET
+  # =============================================================================
+  - name: "Arbitrum Mainnet"
+    endpoints:
+      - chain_id: "ARBITRUM"
+        api_interface: "jsonrpc"
+        network_address: "127.0.0.1:23005"
+        disable_tls: true
+        node_urls:
+          - "https://YOUR-ARBITRUM-NODE-URL"  # CHANGE THIS: Your Arbitrum RPC endpoint
+
+  # =============================================================================
+  # POLYGON MAINNET
+  # =============================================================================
+  - name: "Polygon Mainnet"
+    endpoints:
+      - chain_id: "POLYGON"
+        api_interface: "jsonrpc"
+        network_address: "127.0.0.1:24005"
+        disable_tls: true
+        node_urls:
+          - "https://YOUR-POLYGON-NODE-URL"  # CHANGE THIS: Your Polygon RPC endpoint
+
+  # =============================================================================
+  # AVALANCHE MAINNET
+  # =============================================================================
+  - name: "Avalanche Mainnet"
     endpoints:
       - chain_id: "AVAX"
         api_interface: "jsonrpc"
-        network_address: "0.0.0.0:22001"
+        network_address: "127.0.0.1:25005"
         disable_tls: true
         node_urls:
-          - "http://avalanche-mainnet/ext/bc"
+          - "https://YOUR-AVAX-NODE-URL/ext/bc/C/rpc"  # CHANGE THIS: Your Avalanche RPC endpoint
 
-# ... more chains
+  # =============================================================================
+  # COSMOS HUB MAINNET (Multiple APIs)
+  # =============================================================================
+  - name: "Cosmos Hub Mainnet"
+    endpoints:
+      # REST API endpoint
+      - chain_id: "COSMOSHUB"
+        api_interface: "rest"
+        network_address: "127.0.0.1:26005"
+        disable_tls: true
+        node_urls:
+          - "https://YOUR-COSMOS-API-URL"  # CHANGE THIS: Your Cosmos REST API endpoint
 
+      # Tendermint RPC endpoint
+      - chain_id: "COSMOSHUB"
+        api_interface: "tendermintrpc"
+        network_address: "127.0.0.1:26005"
+        disable_tls: true
+        node_urls:
+          - "https://YOUR-COSMOS-RPC-URL"      # CHANGE THIS: Your Cosmos RPC endpoint
+          - "wss://YOUR-COSMOS-RPC-URL/websocket"  # CHANGE THIS: Your Cosmos WebSocket
+
+      # gRPC endpoint
+      - chain_id: "COSMOSHUB"
+        api_interface: "grpc"
+        network_address: "127.0.0.1:26005"
+        disable_tls: true
+        node_urls:
+          - "YOUR-COSMOS-GRPC-URL:9090"  # CHANGE THIS: Your Cosmos gRPC endpoint
+
+# =============================================================================
+# EXAMPLE: ADD MORE CHAINS HERE
+# =============================================================================
+# Copy the pattern above to add more blockchain networks.
+#
+# Available chain IDs (check latest at https://lava.lavanet.xyz):
+# - ETH1, ARBITRUM, POLYGON, AVAX, BSC, OPTM, BASE, BLAST
+# - COSMOSHUB, OSMOSIS, JUNO, AXELAR, EVMOS
+# - SOLANA, NEAR, APT1, STRK
+# - And many more...
+#
+# Remember to:
+# 1. Use unique network_address ports for each endpoint
+# 2. Replace placeholder URLs with your actual node endpoints
+# 3. Choose appropriate api_interface for each chain
+# 4. Set disable_tls: false if using HTTPS endpoints externally
+
+# =============================================================================
+# NGINX AND SSL CONFIGURATION
+# =============================================================================
 lava_nginx:
-  enabled: true  # Enable Nginx
-  domain: example.com  # Domain of the provider
-  certbot_enabled: false  # Enable Certbot
-  certbot_email: admin@example.com  # Email for Certbot
+  enabled: true  # Set to false to disable Nginx reverse proxy
+  domain: example.com  # CHANGE THIS: Your domain name
+  certbot_enabled: false  # Set to true to enable Let's Encrypt SSL certificates
+  certbot_email: admin@example.com  # CHANGE THIS: Your email for SSL certificates

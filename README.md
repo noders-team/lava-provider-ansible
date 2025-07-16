@@ -1,325 +1,366 @@
-# Lava Provider Setup
+# Lava Provider Ansible Playbook
 
-This project is developed and maintained by [NODERS LLC](https://noders.team/) - Professional Validators and Web3 Developers.
+This Ansible playbook automates the deployment of a **Lava Protocol RPC Provider** on Ubuntu/Debian systems. It handles everything from binary compilation to service configuration and SSL setup.
 
-## About
+## 📋 Requirements
 
-This repository contains Ansible playbooks for setting up and managing a Lava Network RPC provider node.
+- **Target Server**: Ubuntu 20.04+ or Debian 11+
+- **Ansible**: Version 2.9+
+- **Privileges**: SSH access with sudo privileges
+- **Resources**: Minimum 4GB RAM, 2 CPU cores, 100GB disk space
+- **Blockchain Nodes**: Access to blockchain RPC endpoints you want to serve
 
-## Prerequisites
+## 🚀 Quick Start
 
-- Ubuntu 22.04 LTS (Also Verified on Ubuntu 24.04 LTS and Debian 12)
-- Ansible 2.9 or later
-- At least 4GB RAM
-- At least 100GB free disk space
-- Domain name with DNS A record pointing to your server (for SSL)
-- LAVA tokens for staking
+### 1. Clone Repository
 
-## Configuration
+```bash
+git clone <repository-url>
+cd lava-provider
+```
 
-### 1. Configure Variables
+### 2. Configure Your Setup
 
-Edit `group_vars/all.yml` with your specific settings:
+**Edit `group_vars/all.yml`:**
 
 ```yaml
-# User configuration
-lava_user: lava                        # System user for Lava provider
-lava_group: lava                       # System group for Lava provider
-
-# Binary configuration
-lava_binary:
-  name: lavad                          # Binary name (lavad)
-  git_repository: https://github.com/lavanet/lava  # Lava repository
-  image_tag: v3.0.3                    # Version to install
-  go_version: 1.21.5                   # Go version required
-  install_dir: /opt/lava               # Installation directory
-  data_dir: /opt/lava/data             # Data directory
-
-# Provider configuration
+# REQUIRED CHANGES:
 lava_provider_config:
-  chain_id: lava-testnet-2             # Lava network chain ID
-  geolocation: 2                       # Your geolocation (2=Europe, 1=US-Center, etc.)
   wallet:
-    name: lava-wallet                  # Wallet name
-    keyring_backend: test              # Keyring backend
-    password: ""                       # Wallet password (set during setup)
-  log_level: info                      # Log level
-  ports:
-    grpc: 22001                        # gRPC port for provider
-    metrics: 23001                     # Metrics port
-  moniker: "CHANGE-ME"                 # Your provider moniker
-  public_rpc_url: "https://lava-t-rpc.noders.services"  # Lava RPC endpoint
-  total_connections: 25                # Max connections
-
-# Chain endpoints configuration
+    name: "your-wallet-name"  # Change this
+  moniker: "your-provider-name"  # Change this
+  
 chains:
-  - name: "Arbitrum mainnet"
+  - name: "Ethereum Mainnet"
     endpoints:
-      - chain_id: "ARB1"
+      - chain_id: "ETH1"
         api_interface: "jsonrpc"
-        network_address: "0.0.0.0:22001"
+        network_address: "127.0.0.1:22005"
         disable_tls: true
         node_urls:
-          - "http://arbitrum-mainnet:8545"
+          - "https://YOUR-ETH-NODE-URL"  # Replace with your Ethereum RPC
 
-# Nginx and SSL configuration
+# For SSL (optional):
 lava_nginx:
-  enabled: true                        # Enable Nginx reverse proxy
-  domain: example.com                  # Your domain name
-  certbot_enabled: true                # Enable SSL certificates
-  certbot_email: admin@example.com     # Email for SSL certificates
+  domain: "your-domain.com"  # Change this
+  certbot_enabled: true      # Enable SSL
+  certbot_email: "your@email.com"  # Change this
 ```
 
-### 2. Geolocation Options
+### 3. Create Inventory
 
-Choose the appropriate geolocation for your provider:
+**Create `inventory/hosts.yml`:**
 
-- **0**: Global-strict (assigned via governance only)
-- **1**: US-Center (North America) - **Default**
-- **2**: Europe
+```yaml
+all:
+  hosts:
+    your-server:
+      ansible_host: YOUR_SERVER_IP
+      ansible_user: ubuntu
+      ansible_ssh_private_key_file: ~/.ssh/your-key.pem
+```
 
-### 3. Supported Chains
-
-Configure the chains you want to provide RPC services for. Each chain requires:
-- Running blockchain node
-- Proper `chain_id` from Lava specs
-- Appropriate `api_interface` (jsonrpc, tendermintrpc, grpc, rest)
-- Unique network address and port
-
-## Installation
-
-### 1. Setup Provider
+### 4. Deploy
 
 ```bash
-# Run the setup playbook
-ansible-playbook playbooks/setup.yml -i localhost, --connection=local
+ansible-playbook -i inventory/hosts.yml playbooks/setup.yml
 ```
 
-This will:
-- Install Go and required dependencies
-- Build and install Lava binary
-- Create lava user and directories
-- Configure provider settings
-- Set up Nginx with SSL (if enabled)
-- Create systemd service
+## ⚙️ Configuration Guide
 
-### 2. Post-Installation Setup
+### Blockchain Endpoints Configuration
 
-After installation, you need to:
+The most important part is configuring your blockchain endpoints in `group_vars/all.yml`:
 
-1. **Import your wallet**:
+#### Basic Structure
+
+```yaml
+chains:
+  - name: "Human Readable Name"
+    endpoints:
+      - chain_id: "LAVA_CHAIN_ID"       # Official Lava chain identifier
+        api_interface: "jsonrpc"         # API type: jsonrpc, rest, tendermintrpc, grpc
+        network_address: "127.0.0.1:PORT"  # Your provider listening address
+        disable_tls: true                # true for local, false for external HTTPS
+        node_urls:                       # Your actual blockchain nodes
+          - "https://your-node-url"
+          - "wss://your-websocket-url"
+```
+
+#### Supported Chain IDs
+
+Check the latest supported chains at [Lava Network](https://lava.lavanet.xyz):
+
+**EVM Chains:**
+- `ETH1` - Ethereum Mainnet
+- `ARBITRUM` - Arbitrum Mainnet  
+- `POLYGON` - Polygon Mainnet
+- `AVAX` - Avalanche C-Chain
+- `BSC` - Binance Smart Chain
+- `OPTM` - Optimism Mainnet
+- `BASE` - Base Mainnet
+- `BLAST` - Blast Mainnet
+
+**Cosmos Chains:**
+- `COSMOSHUB` - Cosmos Hub
+- `OSMOSIS` - Osmosis
+- `JUNO` - Juno Network
+- `AXELAR` - Axelar Network
+- `EVMOS` - Evmos
+
+**Other Chains:**
+- `SOLANA` - Solana
+- `NEAR` - Near Protocol
+- `APT1` - Aptos
+- `STRK` - StarkNet
+
+#### API Interface Types
+
+- **`jsonrpc`**: For EVM chains, Solana, Near
+- **`rest`**: For Cosmos SDK chains REST API
+- **`tendermintrpc`**: For Cosmos SDK chains RPC
+- **`grpc`**: For Cosmos SDK chains gRPC
+
+#### Example Configurations
+
+**Ethereum Mainnet:**
+```yaml
+- name: "Ethereum Mainnet"
+  endpoints:
+    - chain_id: "ETH1"
+      api_interface: "jsonrpc"
+      network_address: "127.0.0.1:22005"
+      disable_tls: true
+      node_urls:
+        - "https://eth-mainnet.gateway.pokt.network/v1/YOUR_APP_ID"
+        - "wss://ethereum-mainnet-rpc.allthatnode.com/YOUR_API_KEY"
+```
+
+**Cosmos Hub (Multiple APIs):**
+```yaml
+- name: "Cosmos Hub Mainnet"
+  endpoints:
+    # REST API
+    - chain_id: "COSMOSHUB"
+      api_interface: "rest"
+      network_address: "127.0.0.1:26005"
+      disable_tls: true
+      node_urls:
+        - "https://cosmos-rest.publicnode.com"
+    
+    # Tendermint RPC
+    - chain_id: "COSMOSHUB"
+      api_interface: "tendermintrpc"
+      network_address: "127.0.0.1:26005"
+      disable_tls: true
+      node_urls:
+        - "https://cosmos-rpc.publicnode.com"
+        - "wss://cosmos-rpc.publicnode.com/websocket"
+    
+    # gRPC
+    - chain_id: "COSMOSHUB"
+      api_interface: "grpc"
+      network_address: "127.0.0.1:26005"
+      disable_tls: true
+      node_urls:
+        - "cosmos-grpc.publicnode.com:443"
+```
+
+### Wallet Configuration
+
+```yaml
+lava_provider_config:
+  wallet:
+    name: "provider-wallet"     # Your wallet identifier
+    keyring_backend: test       # test, file, or os
+    password: ""               # For file backend only
+```
+
+### Network Configuration
+
+```yaml
+lava_provider_config:
+  chain_id: lava-mainnet-1           # lava-mainnet-1 or lava-testnet-2
+  geolocation: 2                     # 1=US, 2=EU, etc.
+  public_rpc_url: "https://public-rpc.lavanet.xyz:443"
+  moniker: "your-provider-name"      # Your provider identifier
+```
+
+### SSL Configuration
+
+```yaml
+lava_nginx:
+  enabled: true
+  domain: "provider.yourdomain.com"
+  certbot_enabled: true              # Enable Let's Encrypt
+  certbot_email: "admin@yourdomain.com"
+```
+
+## 🏃 Post-Installation
+
+### 1. Wallet Setup
+
+The playbook automatically creates a wallet during installation. If you need to import an existing wallet:
+
 ```bash
-sudo -u lava lavad keys add lava-wallet --keyring-backend test --recover
+sudo -u lava-provider lavap keys delete provider-wallet --keyring-backend test --home /home/lava-provider/.lava-provider
+sudo -u lava-provider lavap keys add provider-wallet --keyring-backend test --home /home/lava-provider/.lava-provider --recover
 ```
 
-2. **Get LAVA tokens** for staking (minimum 50000000000ulava)
+### 2. Fund Your Wallet
 
-3. **Test your provider**:
-```bash
-lavad test rpcprovider --from lava-wallet --endpoints "your-domain.com:443,CHAINID" --node https://lava-t-rpc.noders.services --keyring-backend test
-```
-
-4. **Stake your provider**:
-```bash
-lavad tx pairing stake-provider CHAINID "50000000000ulava" "your-domain.com:443,1" 1 lava@validatoraddress -y --from lava-wallet --provider-moniker "your-moniker" --delegate-limit "0ulava" --gas-adjustment "1.5" --gas "auto" --gas-prices "0.0001ulava" --node https://lava-t-rpc.noders.services --keyring-backend test --chain-id lava-testnet-2
-```
-
-### 3. Clean Installation
-
-To remove the installation:
+Get LAVA tokens for staking (minimum 50000000000ulava = 50,000 LAVA):
 
 ```bash
-# Run the cleanup playbook
-ansible-playbook playbooks/clean.yml -i localhost, --connection=local
+# Check wallet address
+sudo -u lava-provider lavap keys show provider-wallet --keyring-backend test --home /home/lava-provider/.lava-provider
+
+# Fund this address from your main wallet or faucet
 ```
 
-This will:
-- Stop the Lava provider service
-- Remove installation directories
-- Remove lava user and group
-- Clean up Nginx configuration
+### 3. Test Your Provider
 
-## Provider Management
+```bash
+sudo -u lava-provider lavap test rpcprovider \
+  --from "provider-wallet" \
+  --endpoints "127.0.0.1:22005,jsonrpc,ETH1" \
+  --keyring-backend test \
+  --home /home/lava-provider/.lava-provider \
+  --chain-id lava-mainnet-1 \
+  --node https://public-rpc.lavanet.xyz:443
+```
 
-### Systemd Service Commands
+### 4. Monitor Your Provider
 
 ```bash
 # Check service status
 sudo systemctl status lava-provider
 
-# Start the provider
-sudo systemctl start lava-provider
+# View logs
+sudo journalctl -fu lava-provider
 
-# Stop the provider
-sudo systemctl stop lava-provider
+# Check active endpoints
+sudo journalctl -u lava-provider | grep "active endpoints"
+```
 
-# Restart the provider
+### 5. Stake Your Provider
+
+Once testing is successful, stake your provider on the Lava Network:
+
+```bash
+sudo -u lava-provider lavap tx pairing stake-provider \
+  ETH1 \
+  50000000000ulava \
+  "your-provider-domain.com:443,1" \
+  1 \
+  --from provider-wallet \
+  --keyring-backend test \
+  --home /home/lava-provider/.lava-provider \
+  --chain-id lava-mainnet-1 \
+  --node https://public-rpc.lavanet.xyz:443 \
+  --gas-adjustment 1.5 \
+  --gas auto \
+  --yes
+```
+
+## 🛠️ Management Commands
+
+### Service Management
+
+```bash
+# Restart provider
 sudo systemctl restart lava-provider
 
-# Enable service to start on boot
-sudo systemctl enable lava-provider
+# Stop provider
+sudo systemctl stop lava-provider
 
-# Disable service from starting on boot
-sudo systemctl disable lava-provider
+# Check status
+sudo systemctl status lava-provider
 ```
 
-### Viewing Logs
+### Configuration Updates
+
+After modifying `group_vars/all.yml`:
 
 ```bash
-# View service logs
-sudo journalctl -u lava-provider -f
+# Update configuration only
+ansible-playbook -i inventory/hosts.yml playbooks/setup.yml --tags config
 
-# View last 100 lines
-sudo journalctl -u lava-provider -n 100
-
-# View logs since last boot
-sudo journalctl -u lava-provider -b
+# Full redeployment
+ansible-playbook -i inventory/hosts.yml playbooks/setup.yml
 ```
 
-### Provider Management Commands
+### Clean Installation
 
 ```bash
-# Check provider status
-lavad q pairing account-info YOUR_LAVA_ADDRESS --node https://lava-t-rpc.noders.services
-
-# Unfreeze provider (takes 30 minutes)
-lavad tx pairing unfreeze CHAINID --from lava-wallet --gas-adjustment "1.5" --gas "auto" --gas-prices "0.0001ulava" --node https://lava-t-rpc.noders.services --keyring-backend test --chain-id lava-testnet-2 -y
-
-# Check available chains and specs
-curl -X 'GET' 'https://public-rpc-testnet2.lavanet.xyz/rest/lavanet/lava/spec/show_all_chains' -H 'accept: application/json' | jq
+ansible-playbook -i inventory/hosts.yml playbooks/clean.yml
 ```
 
-### Directory Structure
-
-```
-/home/lava/.lava/
-├── config/
-│   └── rpcprovider.yml    # Provider configuration
-├── rewards-storage/        # Rewards data
-└── provider.env           # Environment variables
-
-/opt/lava/
-├── src/                   # Source code
-└── data/                  # Data directory
-
-/usr/local/bin/
-└── lavad                  # Lava binary
-```
-
-## Architecture
-
-### How Lava Provider Works
-
-1. **Central Router**: Lava provider acts as a central routing service
-2. **Chain Endpoints**: Each blockchain has its own endpoint configuration
-3. **Request Flow**: `Client → Nginx → Lava Provider → Blockchain Node`
-4. **Multi-Chain**: Single provider can serve multiple blockchains
-
-### Port Configuration
-
-- **22001**: Main provider gRPC port
-- **23001**: Metrics port
-- **22002, 22003...**: Individual chain endpoints
-- **80/443**: Nginx HTTP/HTTPS ports
-
-## Troubleshooting
+## 🔍 Troubleshooting
 
 ### Common Issues
 
-1. **Binary Not Found**
-   - Check if `/usr/local/bin/lavad` exists
-   - Verify PATH includes `/usr/local/bin`
-   - Rebuild with `ansible-playbook playbooks/setup.yml`
-
-2. **SSL Certificate Issues**
-   - Verify domain DNS points to your server
-   - Check certbot logs: `sudo journalctl -u certbot`
-   - Manually request certificate: `sudo certbot --nginx -d your-domain.com`
-
-3. **Provider Connection Issues**
-   - Check if blockchain nodes are running and accessible
-   - Verify node URLs in configuration
-   - Test RPC endpoints manually
-
-4. **Staking Issues**
-   - Ensure you have enough LAVA tokens
-   - Check wallet balance: `lavad q bank balances YOUR_ADDRESS`
-   - Verify chain ID and geolocation parameters
-
-### Log Files
-
-- Provider logs: `journalctl -u lava-provider`
-- Nginx logs: `/var/log/nginx/lava_provider_*.log`
-- System logs: `journalctl -f`
-
-### Testing Provider
-
+**1. Binary Build Fails**
 ```bash
-# Test specific chain endpoint
-curl -X POST -H "Content-Type: application/json" \
-  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-  https://your-domain.com
+# Check Go installation
+which go
+go version
 
-# Test with Lava test tool
-lavad test rpcprovider --from lava-wallet \
-  --endpoints "your-domain.com:443,ETH1" \
-  --node https://lava-t-rpc.noders.services \
-  --keyring-backend test
+# Manual binary download
+wget https://github.com/lavanet/lava/releases/download/v3.0.3/lavap_v3.0.3_linux_amd64
+sudo mv lavap_v3.0.3_linux_amd64 /usr/local/bin/lavap
+sudo chmod +x /usr/local/bin/lavap
 ```
 
-## Security Considerations
+**2. Service Won't Start**
+```bash
+# Check configuration
+sudo -u lava-provider lavap validate-config /home/lava-provider/.lava-provider/config/rpcprovider.yml
 
-1. **Wallet Security**
-   - Use strong passwords for wallet
-   - Backup keyring files securely
-   - Consider hardware security modules for mainnet
+# Check wallet exists
+sudo -u lava-provider lavap keys list --keyring-backend test --home /home/lava-provider/.lava-provider
+```
 
-2. **SSL/TLS**
-   - Always use SSL for public providers
-   - Keep certificates updated
-   - Use strong SSL configurations
+**3. No Active Endpoints**
+```bash
+# Verify node connectivity
+curl -X POST -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+  https://your-eth-node-url
 
-3. **System Security**
-   - Keep system updated
-   - Configure firewall rules
-   - Monitor system logs
-   - Limit SSH access
+# Check endpoint configuration
+cat /home/lava-provider/.lava-provider/config/rpcprovider.yml
+```
 
-4. **Provider Security**
-   - Monitor provider performance
-   - Set up alerting for downtime
-   - Backup configuration files
+**4. Protocol Version Mismatch**
+If you see errors like "minimum protocol version mismatch":
+```bash
+# Update to newer Lava version in group_vars/all.yml
+lava_binary:
+  image_tag: v5.4.1  # Or latest version
 
-## Monitoring
+# Rebuild and restart
+ansible-playbook -i inventory/hosts.yml playbooks/setup.yml --tags binary
+sudo systemctl restart lava-provider
+```
 
-### Metrics
+### Useful Links
 
-Provider exposes Prometheus metrics on the configured metrics port:
-- `http://localhost:23001/metrics`
+- [Lava Protocol Documentation](https://docs.lavanet.xyz)
+- [Provider Setup Guide](https://docs.lavanet.xyz/provider-setup)
+- [Chain Specifications](https://lava.lavanet.xyz)
+- [Discord Support](https://discord.gg/lavanetxyz)
 
-### Health Checks
+## 📄 License
 
-- Provider health: Check systemd service status
-- Nginx health: Check HTTP response codes
-- Chain health: Monitor blockchain node connectivity
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🤝 Contributing
 
-For issues and support:
-1. Check the [official Lava documentation](https://docs.lavanet.xyz)
-2. Review logs for specific error messages
-3. Contact NODERS LLC via [official NODERS LLC Telegram Chat](https://t.me/noderschatru)
-4. Join Lava Discord community
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## NODERS LLC
-
-- **Website**: [noders.team](https://noders.team)
-- **Contact**: office@noders.team
-- **Services**:
-  - Professional Blockchain Validation
-  - Web3 Development
-  - Infrastructure Services
-  - IBC Relayers
-  - Nodes as a Service
-
-With over $100M+ securely staked, 40+ mainnets supported, and 99.0% uptime since 2017, NODERS is a trusted name in the blockchain infrastructure space.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request

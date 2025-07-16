@@ -48,6 +48,35 @@
 - name: Install binary
   include_tasks: binary.yml
   when: binary_path.rc != 0
+  tags: binary
+
+- name: Create wallet key
+  shell: |
+    {{ lava_binary.name }} keys add {{ lava_provider_config.wallet.name }} \
+      --keyring-backend {{ lava_provider_config.wallet.keyring_backend }} \
+      --home {{ lava_install_dir }}
+  environment:
+    PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+  register: key_creation
+  failed_when: false
+  changed_when: key_creation.rc == 0
+
+- name: Display wallet creation result
+  debug:
+    msg: |
+      Wallet creation result:
+      {{ key_creation.stdout }}
+      {{ key_creation.stderr }}
+  when: key_creation is defined
+
+- name: Chown directories recursively
+  file:
+    path: "{{ item }}"
+    owner: "{{ lava_user }}"
+    group: "{{ lava_group }}"
+    recurse: true
+  with_items:
+    - "{{ lava_install_dir }}"
 
 - name: Start and enable lava provider service
   systemd:

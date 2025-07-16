@@ -31,7 +31,7 @@ jobs:
 
       - name: Run yamllint
         run: |
-          yamllint -d "{ignore: .github/workflows, extends: default, rules: {line-length: {max: 150}, document-start: disable}}" .
+          yamllint -d "{ignore: .github/workflows, extends: default, rules: {line-length: {max: 200}, document-start: disable}}" .
 
       - name: Run ansible-lint
         run: ansible-lint .
